@@ -334,6 +334,7 @@ void nodeAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug
 
 	int nrOfNormals = normals.length();
 
+
 	MVectorArray normalsArray;
 
 	for (int i = 0; i < triNormIndex.length(); i++)
