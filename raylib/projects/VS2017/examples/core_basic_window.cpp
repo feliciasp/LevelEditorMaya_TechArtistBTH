@@ -3,7 +3,7 @@
 #include <raylib.h>
 #include <raymath.h>
 #include <rlgl.h>
-#include <C:\Users\BTH\Desktop\Project1\Project1\ComLib.h>
+#include <C:\Users\BTH\source\repos\LevelEditorMaya\Project1\Project1\ComLib.h>
 #pragma comment(lib, "Project1.lib")
 
 #include <map>

@@ -5,7 +5,7 @@
 #include <vector>
 #include <queue>
 #include <string>
-#include <C:\Users\BTH\Desktop\Project1\Project1\ComLib.h>
+#include <C:\Users\BTH\source\repos\LevelEditorMaya\Project1\Project1\ComLib.h>
 #pragma comment(lib, "Project1.lib")
 
 ComLib ourComLib("buffer2", 50, PRODUCER);
