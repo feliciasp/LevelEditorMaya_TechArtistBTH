@@ -245,6 +245,8 @@ void nodeMaterialAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug &plu
 //sending 1/3
 void nodeAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug, void* x)
 {
+	MStreamUtils::stdOutStream() << "in nodeAttributeChanged" << endl;
+
 	MDagPath path;
 	MFnDagNode(plug.node()).getPath(path);
 	MFnTransform transform(path);
@@ -302,6 +304,8 @@ void nodeAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug
 
 	//MVector to string
 	std::string vtxArrayString;
+	int vtxCount = trueVtxForm.length();
+	vtxArrayString.append(to_string(vtxCount) + " ");
 	size_t vtxArrElements = 0;
 
 	for (int u = 0; u < trueVtxForm.length(); u++)
@@ -312,6 +316,8 @@ void nodeAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug
 			vtxArrElements++;
 		}
 	}
+
+	MStreamUtils::stdOutStream() << "vtxArrayString: " << vtxArrayString << "_" << endl;
 
 	//pass to send
 	bool msgToSend = false;
@@ -425,6 +431,9 @@ void nodeNameChangedLight(MObject &node, const MString &str, void*clientData) {
 //sending
 void nodeWorldMatrixChanged(MObject &node, MDagMessage::MatrixModifiedFlags &modified, void *clientData)
 {
+
+	MStreamUtils::stdOutStream() << "in nodeWorldMatrixChanged" << endl;
+
 	MDagPath path;
 	MFnDagNode(node).getPath(path);
 	MFnTransform transform(path);
@@ -538,6 +547,8 @@ void meshConnectionChanged(MPlug &plug, MPlug &otherPlug, bool made, void *clien
 //sending
 void vtxPlugConnected(MPlug & srcPlug, MPlug & destPlug, bool made, void* clientData)
 {
+
+	MStreamUtils::stdOutStream() << "in vtxPlugCnnected" << endl;
 
 	if (srcPlug.partialName() == "out" && destPlug.partialName() == "i")
 	{
@@ -875,8 +886,6 @@ for (int u = 0; i < sets.length(); u++)
 	MStreamUtils::stdOutStream() << "faceIt index:  " << faceIt.index() << endl;
 }*/
 
-
-
 //while (!itPoly.isDone())
 //{
 //	int vtxCountForCurrentFace = itPoly.polygonVertexCount();
@@ -889,11 +898,6 @@ for (int u = 0; i < sets.length(); u++)
 //	}*/
 //	
 //}
-
-
-
-
-
 
 //MDagPath path;
 //MFnDagNode(destPlug.node()).getPath(path);
@@ -1069,16 +1073,6 @@ for (int u = 0; i < sets.length(); u++)
 //		trueVtxForm.append(vtxTest[triVertsIndex[i]]);
 //		MStreamUtils::stdOutStream() << trueVtxForm[i] << std::endl;
 //	}
-
-
-
-
-
-
-
-
-
-
 
 //get array size
 //int finalSize = strlen(vtxArrayString.c_str());

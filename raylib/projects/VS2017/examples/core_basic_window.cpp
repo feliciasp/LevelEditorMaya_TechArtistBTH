@@ -112,7 +112,7 @@ int main()
 	int nrOfObj = 0;
 	Model cube;
 	size_t tempArraySize = 0;
-	//////
+	//
 
     // Initialization
     //--------------------------------------------------------------------------------------
@@ -457,9 +457,14 @@ void updateNode(std::vector<modelFromMaya>& objNameArray, char* buffer, int buff
 		float* arrayVtx = new float[msgHeader.msgSize];
 		int lengthVtxArr = 0;
 
+		int nrVtx;
+		int vtxCheck = 0;
+
 		// setup stringstream
 		std::string msgString(msgElements, msgHeader.msgSize);
 		std::istringstream ss(msgString);
+
+		ss >> nrVtx;
 
 		std::string tempX, tempY, tempZ = "";
 		int element = 0;
@@ -469,22 +474,26 @@ void updateNode(std::vector<modelFromMaya>& objNameArray, char* buffer, int buff
 
 		while (!ss.eof()) {
 
-			ss >> tempX >> tempY >> tempZ;
+			while (vtxCheck < nrVtx)
+			{
+				ss >> tempX >> tempY >> tempZ;
 
-			if (element >= nrOfElements) {
-				std::cout << "Last element fount " << std::endl;
-				break;
-			}
+				if (element >= nrOfElements) {
+					std::cout << "Last element fount " << std::endl;
+					break;
+				}
 
-			if (std::stringstream(tempX) >> tempFloat && std::stringstream(tempY) >> tempFloat && std::stringstream(tempZ) >> tempFloat) {
-				//std::cout << "TEMP: " << tempX << " : " << tempY << " : " << tempX << std::endl;
+				if (std::stringstream(tempX) >> tempFloat && std::stringstream(tempY) >> tempFloat && std::stringstream(tempZ) >> tempFloat) {
+					//std::cout << "TEMP: " << tempX << " : " << tempY << " : " << tempX << std::endl;
 
-				arrayVtx[element] = (float)std::stof(tempX);
-				arrayVtx[element + 1] = (float)std::stof(tempY);
-				arrayVtx[element + 2] = (float)std::stof(tempZ);
+					arrayVtx[element] = (float)std::stof(tempX);
+					arrayVtx[element + 1] = (float)std::stof(tempY);
+					arrayVtx[element + 2] = (float)std::stof(tempZ);
 
-				lengthVtxArr = lengthVtxArr + 3;
-				element = element + 3;
+					lengthVtxArr = lengthVtxArr + 3;
+					element = element + 3;
+				}
+				vtxCheck = vtxCheck + 3;
 			}
 		}
 
