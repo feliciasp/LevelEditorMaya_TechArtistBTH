@@ -192,9 +192,9 @@ int main()
 			int i = 0;
 			i++;
 			//////////////////////////////
-			camera.position = cameraMaya[0].pos;
-			camera.target = cameraMaya[0].forward;
-			camera.up = cameraMaya[0].up;
+			//camera.position = cameraMaya[0].pos;
+			//camera.target = cameraMaya[0].forward;
+			//camera.up = cameraMaya[0].up;
 
 			SetShaderValueMatrix(shader1, viewLoc, GetCameraMatrix(camera));
 
@@ -320,6 +320,7 @@ CMDTYPE recvFromMaya(char* buffer)
 
 void addNode(std::vector<modelFromMaya>& objNameArray, char* buffer, int bufferSize, Shader shader1, int* nrObjs, int* index, std::vector<lightFromMaya>& lightsFromMaya, std::vector<cameraFromMaya>& cameraFromMaya)
 {
+	std::cout << "ADD" << std::endl;
 	// Get elements from buffer
 	MsgHeader msgHeader = {};
 	std::string objectName = "";
@@ -341,39 +342,89 @@ void addNode(std::vector<modelFromMaya>& objNameArray, char* buffer, int bufferS
 		char* msgElements = new char[msgHeader.msgSize];
 		memcpy((char*)msgElements, buffer + sizeof(MsgHeader) + sizeof(msgMesh), msgHeader.msgSize);	//copy msg
 
-		float* arrayVtx = new float[msgHeader.msgSize];
-		int lengthVtxArr = 0;
-
 		// setup stringstream
 		std::string msgString(msgElements, msgHeader.msgSize);
 		std::istringstream ss(msgString);
+
+		std::cout << "MSG from api: " << msgString << "________END_____________" << std::endl;
+
+		int nrOfElements = mesh.trisCount * 3 * 3; //for each tris, add each vtx and then [x,y,z]
+
+		int nrVtx;
+		int vtxCheck = 0;
+		int nrNorm;
+		int normCheck = 0;
+
+		ss >> nrVtx;
+
+		float* arrayVtx = new float[nrVtx * 3];
+		int lengthVtxArr = 0;
 
 		std::string tempX, tempY, tempZ = "";
 		int element = 0;
 		float tempFloat = 0.0f;
 
-		int nrOfElements = mesh.trisCount * 3 * 3; //for each tris, add each vtx and then [x,y,z]
+		std::string tempNormX, tempNormY, tempNormZ = "";
+		int lengthNormArr = 0;
+		float* arrayNorm;
 
 		while (!ss.eof()) {
 
-			ss >> tempX >> tempY >> tempZ;
+			while (vtxCheck < nrVtx)
+			{
 
-			if (element >= nrOfElements) {
-				std::cout << "Last element fount " << std::endl;
-				break;
+				ss >> tempX >> tempY >> tempZ;
+
+				if (element >= nrOfElements) {
+					std::cout << "Last element fount " << std::endl;
+					break;
+				}
+
+				if (std::stringstream(tempX) >> tempFloat && std::stringstream(tempY) >> tempFloat && std::stringstream(tempZ) >> tempFloat) {
+					//std::cout << "TEMP: " << tempX << " : " << tempY << " : " << tempX << std::endl;
+
+					arrayVtx[element] = (float)std::stof(tempX);
+					arrayVtx[element + 1] = (float)std::stof(tempY);
+					arrayVtx[element + 2] = (float)std::stof(tempZ);
+
+					lengthVtxArr = lengthVtxArr + 3;
+					element = element + 3;
+				}
+				vtxCheck++;
 			}
 
-			if (std::stringstream(tempX) >> tempFloat && std::stringstream(tempY) >> tempFloat && std::stringstream(tempZ) >> tempFloat) {
-				//std::cout << "TEMP: " << tempX << " : " << tempY << " : " << tempX << std::endl;
+			ss >> nrNorm;
 
-				arrayVtx[element] = (float)std::stof(tempX);
-				arrayVtx[element + 1] = (float)std::stof(tempY);
-				arrayVtx[element + 2] = (float)std::stof(tempZ);
+			arrayNorm = new float[nrNorm * 3];
 
-				lengthVtxArr = lengthVtxArr + 3;
-				element = element + 3;
+			element = 0;
+
+			while (normCheck < nrNorm)
+			{
+				ss >> tempNormX, tempNormY, tempNormZ;
+
+				if (element >= nrOfElements) {
+					std::cout << "Last element fount " << std::endl;
+					break;
+				}
+
+				if (std::stringstream(tempNormX) >> tempFloat && std::stringstream(tempNormY) >> tempFloat && std::stringstream(tempNormZ) >> tempFloat) {
+
+					arrayNorm[element] = (float)std::stof(tempX);
+					arrayNorm[element + 1] = (float)std::stof(tempY);
+					arrayNorm[element + 2] = (float)std::stof(tempZ);
+
+					lengthNormArr = lengthNormArr + 3;
+					element = element + 3;
+				}
+				normCheck++;
+
 			}
+
+			break;
 		}
+
+		std::cout << arrayNorm << std::endl;
 
 		bool exists = false;
 		for (int i = 0; i < *nrObjs; i++) {
@@ -382,12 +433,18 @@ void addNode(std::vector<modelFromMaya>& objNameArray, char* buffer, int bufferS
 			}
 		}
 
+		exists == false;
+
 		if (exists == false) {
 
 			Mesh tempMeshToAdd = {};
 			tempMeshToAdd.vertexCount = lengthVtxArr;
 			tempMeshToAdd.vertices = new float[lengthVtxArr];
 			memcpy(tempMeshToAdd.vertices, arrayVtx, sizeof(float) * tempMeshToAdd.vertexCount);
+
+			tempMeshToAdd.normals = new float[lengthNormArr];
+			memcpy(tempMeshToAdd.normals, arrayNorm, sizeof(float) * lengthNormArr);
+
 			rlLoadMesh(&tempMeshToAdd, false);
 
 			Model tempModelToAdd = LoadModelFromMesh(tempMeshToAdd);
@@ -441,24 +498,23 @@ void updateNode(std::vector<modelFromMaya>& objNameArray, char* buffer, int buff
 	objectName = msgHeader.objName;
 	objectName = objectName.substr(0, msgHeader.nameLen);
 
-	std::cout << "in update and printing cmdType " << msgHeader.cmdType << " " << std::endl;
-	std::cout << "in update and printing node_TYPE " << msgHeader.nodeType << " " << std::endl;
+	//std::cout << "in update and printing cmdType " << msgHeader.cmdType << " " << std::endl;
+	//std::cout << "in update and printing node_TYPE " << msgHeader.nodeType << " " << std::endl;
 
 	if (msgHeader.nodeType == NODE_TYPE::MESH)
 	{
 		std::cout << "============================" << std::endl;
-		std::cout << "UPDATE MODEL: " << std::endl;
+		std::cout << "LALALALALA MODEL: " << std::endl;
 		msgMesh mesh = {};
 
 		memcpy((char*)&mesh, buffer + sizeof(MsgHeader), sizeof(msgMesh));	//mesh struct
 		char* msgElements = new char[msgHeader.msgSize];
 		memcpy((char*)msgElements, buffer + sizeof(MsgHeader) + sizeof(msgMesh), msgHeader.msgSize);	//copy msg
 
-		float* arrayVtx = new float[msgHeader.msgSize];
-		int lengthVtxArr = 0;
-
 		int nrVtx;
 		int vtxCheck = 0;
+		int nrNorm;
+		int normCheck = 0;
 
 		// setup stringstream
 		std::string msgString(msgElements, msgHeader.msgSize);
@@ -466,11 +522,19 @@ void updateNode(std::vector<modelFromMaya>& objNameArray, char* buffer, int buff
 
 		ss >> nrVtx;
 
+		float* arrayNorm;
+		int lengthNormArr = 0;
+		float* arrayVtx = new float[nrVtx * 3];
+		int lengthVtxArr = 0;
+
 		std::string tempX, tempY, tempZ = "";
 		int element = 0;
 		float tempFloat = 0.0f;
 
 		int nrOfElements = mesh.trisCount * 3 * 3; //for each tris, add each vtx and then [x,y,z]
+
+		std::string tempNormX, tempNormY, tempNormZ = "";
+
 
 		while (!ss.eof()) {
 
@@ -493,8 +557,39 @@ void updateNode(std::vector<modelFromMaya>& objNameArray, char* buffer, int buff
 					lengthVtxArr = lengthVtxArr + 3;
 					element = element + 3;
 				}
-				vtxCheck = vtxCheck + 3;
+				vtxCheck++;
 			}
+
+			ss >> nrNorm;
+
+			arrayNorm = new float[nrNorm * 3];
+
+			element = 0;
+
+			while (normCheck < nrNorm)
+			{
+				ss >> tempNormX, tempNormY, tempNormZ;
+
+				if (element >= nrOfElements) {
+					std::cout << "Last element fount " << std::endl;
+					break;
+				}
+
+				if (std::stringstream(tempNormX) >> tempFloat && std::stringstream(tempNormY) >> tempFloat && std::stringstream(tempNormZ) >> tempFloat) {
+
+					arrayNorm[element] = (float)std::stof(tempX);
+					arrayNorm[element + 1] = (float)std::stof(tempY);
+					arrayNorm[element + 2] = (float)std::stof(tempZ);
+
+					lengthNormArr = lengthNormArr + 3;
+					element = element + 3;
+				}
+				normCheck++;
+
+			}
+
+			break;
+			
 		}
 
 		for (int i = 0; i < *nrObjs; i++)
@@ -507,6 +602,10 @@ void updateNode(std::vector<modelFromMaya>& objNameArray, char* buffer, int buff
 				tempMeshToAdd.vertexCount = lengthVtxArr;
 				tempMeshToAdd.vertices = new float[lengthVtxArr];
 				memcpy(tempMeshToAdd.vertices, arrayVtx, sizeof(float) * tempMeshToAdd.vertexCount);
+
+				tempMeshToAdd.normals = new float[lengthNormArr];
+				memcpy(tempMeshToAdd.normals, arrayNorm, sizeof(float) * tempMeshToAdd.vertexCount);
+
 				rlLoadMesh(&tempMeshToAdd, false);
 
 				Model tempModelToAdd = LoadModelFromMesh(tempMeshToAdd);
@@ -565,8 +664,10 @@ void updateNode(std::vector<modelFromMaya>& objNameArray, char* buffer, int buff
 		ss >> tempFloat >> tempFloat >> tempFloat >> foward.x >> foward.y >> foward.z >> up.x >> up.y >> up.z >> pos.x >> pos.y >> pos.z;
 		
 		cameraFromMaya.erase(cameraFromMaya.begin());
-		cameraFromMaya.insert(cameraFromMaya.begin(), { {0,1,0 }, foward, pos});
+		cameraFromMaya.insert(cameraFromMaya.begin(), { up, foward, pos});
 	}
+
+	std::cout << "============================" << std::endl;
 }
 
 void updateNodeMatrix(std::vector<modelFromMaya>& objNameArray, char* buffer, int bufferSize, Shader shader, int* nrObjs, int* index, std::vector<lightFromMaya>& lightsFromMaya, std::vector<cameraFromMaya>& cameraFromMaya)

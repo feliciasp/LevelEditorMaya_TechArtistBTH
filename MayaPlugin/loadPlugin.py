@@ -24,7 +24,6 @@ answer = s.recv(1024)
 
 # create a polycube
 s.send('polyCube\n')
-s.send('polyTriangulate\n')
 
 answer = s.recv(1024)
 

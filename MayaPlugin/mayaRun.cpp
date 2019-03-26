@@ -294,6 +294,8 @@ void nodeAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug
 	mesh.getTriangles(triCount, triVertsIndex);
 	MVectorArray trueVtxForm;
 
+	MStreamUtils::stdOutStream() << "nrVtx: " << nrElements << endl;
+
 	for (int i = 0; i < triVertsIndex.length(); i++)
 	{
 		trueVtxForm.append(vtxArrayMessy[triVertsIndex[i]]);
@@ -317,7 +319,50 @@ void nodeAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug
 		}
 	}
 
-	MStreamUtils::stdOutStream() << "vtxArrayString: " << vtxArrayString << "_" << endl;
+	//MStreamUtils::stdOutStream() << "vtxArrayString: " << vtxArrayString << "_" << endl;
+
+	/////////////
+	// NORMALS //
+	/////////////
+
+	MIntArray normCount;
+	MIntArray triNormIndex;
+	mesh.getNormalIds(normCount, triNormIndex);
+
+	MFloatVectorArray normals;
+	mesh.getNormals(normals, MSpace::kWorld);
+
+	int nrOfNormals = normals.length();
+
+	MVectorArray normalsArray;
+
+	for (int i = 0; i < triNormIndex.length(); i++)
+	{
+		normalsArray.append(normals[triNormIndex[i]]);
+	}
+
+	int nrNormals = triNormIndex.length();
+
+	//MVector to string
+	std::string NormArrayString;
+	NormArrayString.append(to_string(nrNormals) + " ");
+	size_t normArrElements = 0;
+
+	for (int u = 0; u < normalsArray.length(); u++)
+	{
+		for (int v = 0; v < 3; v++)
+		{
+			NormArrayString.append(to_string(normalsArray[u][v]) + " ");
+			normArrElements++;
+		}
+	}
+
+	//MStreamUtils::stdOutStream() << "NormArrayString: " << NormArrayString << "_" << endl;
+
+
+	std::string masterTransformString;
+	masterTransformString.append(vtxArrayString + " ");
+	masterTransformString.append(NormArrayString);
 
 	//pass to send
 	bool msgToSend = false;
@@ -325,28 +370,7 @@ void nodeAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug
 		msgToSend = true;
 
 	if (msgToSend) {
-		sendMsg(CMDTYPE::UPDATE_NODE, NODE_TYPE::MESH, nrElements, totalTrisCount, objName, vtxArrayString);
-	}
-
-	/////////////
-	// NORMALS //
-	/////////////
-
-	MFloatVectorArray normals;
-	mesh.getNormals(normals, MSpace::kWorld);
-
-	int nrOfNormals = normals.length();
-
-	for (int i = 0; i < nrOfNormals; i++) {
-
-		MFloatVector currentNormal = normals[i];
-		MString nrml("");
-		nrml += currentNormal[0];
-		nrml += ", ";
-		nrml += currentNormal[1];
-		nrml += ", ";
-		nrml += currentNormal[2];
-
+		sendMsg(CMDTYPE::UPDATE_NODE, NODE_TYPE::MESH, nrElements, totalTrisCount, objName, masterTransformString);
 	}
 	
 	//////////////////////////
@@ -547,7 +571,6 @@ void meshConnectionChanged(MPlug &plug, MPlug &otherPlug, bool made, void *clien
 //sending
 void vtxPlugConnected(MPlug & srcPlug, MPlug & destPlug, bool made, void* clientData)
 {
-
 	MStreamUtils::stdOutStream() << "in vtxPlugCnnected" << endl;
 
 	if (srcPlug.partialName() == "out" && destPlug.partialName() == "i")
@@ -559,76 +582,155 @@ void vtxPlugConnected(MPlug & srcPlug, MPlug & destPlug, bool made, void* client
 			MFnTransform transform(path);
 			MFnMesh mesh(path);
 
-			//////////////////////////
-			//						//
-			//			VTX			//
-			//						//
-			//////////////////////////
-			MPlug vtxArray = mesh.findPlug("controlPoints");
-			size_t nrElements = vtxArray.numElements();
+			MPlugArray plugArray;
+			destPlug.connectedTo(plugArray, true, true);
 
-			//get vtx in array
-			MVectorArray vtxArrayMessy;
-			for (int i = 0; i < nrElements; i++)
+			MStreamUtils::stdOutStream() << "parent: " << plugArray[0].name() << endl;
+
+			std::string testString = "polyTriangulate";
+			std::string name = plugArray[0].name().asChar();
+
+
+			bool triangulated = false;
+			if (name.find(testString) == std::string::npos)
 			{
-				//get plug for i array item (gives: shape.vrts[x])
-				MPlug currentVtx = vtxArray.elementByLogicalIndex(i);
+				MGlobal::executeCommand("polyTriangulate " + mesh.name(), true, true);
+				MStreamUtils::stdOutStream() << "TRANGULATING" << endl;
+				triangulated = true;
+			}
+			else{
+				triangulated = true;
+			}
+			
+			MStreamUtils::stdOutStream() << "_________________________" << endl;
 
-				float x = 0;
-				float y = 0;
-				float z = 0;
+			if (triangulated)
+			{
 
-				if (currentVtx.isCompound())
+
+				//MGlobal::executeCommand("polyTriangulate " + mesh.name(), true, true);
+
+				//////////////////////////
+				//						//
+				//			VTX			//
+				//						//
+				//////////////////////////
+
+				MPlug vtxArray = mesh.findPlug("controlPoints");
+				size_t nrElements = vtxArray.numElements();
+
+				MStreamUtils::stdOutStream() << "nrVtx: " << nrElements << endl;
+
+				//get vtx in array
+				MVectorArray vtxArrayMessy;
+				for (int i = 0; i < nrElements; i++)
 				{
-					//we have control points [0] but in Maya the values are one hierarchy down so we acces them by getting the child
-					MPlug plugX = currentVtx.child(0);
-					MPlug plugY = currentVtx.child(1);
-					MPlug plugZ = currentVtx.child(2);
+					//get plug for i array item (gives: shape.vrts[x])
+					MPlug currentVtx = vtxArray.elementByLogicalIndex(i);
 
-					//get value and story them in our xyz
-					plugX.getValue(x);
-					plugY.getValue(y);
-					plugZ.getValue(z);
+					float x = 0;
+					float y = 0;
+					float z = 0;
 
-					MVector tempPoint = { x, y, z };
-					vtxArrayMessy.append(tempPoint);
+
+					if (currentVtx.isCompound())
+					{
+						//we have control points [0] but in Maya the values are one hierarchy down so we acces them by getting the child
+						MPlug plugX = currentVtx.child(0);
+						MPlug plugY = currentVtx.child(1);
+						MPlug plugZ = currentVtx.child(2);
+
+						//get value and story them in our xyz
+						plugX.getValue(x);
+						plugY.getValue(y);
+						plugZ.getValue(z);
+
+						MVector tempPoint = { x, y, z };
+						vtxArrayMessy.append(tempPoint);
+					}
+				}
+
+				//sort vtx correctly
+				MIntArray triCount;
+				MIntArray triVertsIndex;
+				mesh.getTriangles(triCount, triVertsIndex);
+				MVectorArray trueVtxForm;
+				for (int i = 0; i < triVertsIndex.length(); i++) {
+					trueVtxForm.append(vtxArrayMessy[triVertsIndex[i]]);
+				}
+
+				int totalTrisCount = triCount.length() * 2;
+
+				//add command + name to string
+				std::string objName = mesh.name().asChar();
+
+				//MVector to string
+				std::string vtxArrayString;
+				int vtxCount = trueVtxForm.length();
+				vtxArrayString.append(to_string(vtxCount) + " ");
+				size_t vtxArrElements = 0;
+
+				for (int u = 0; u < trueVtxForm.length(); u++) {
+					for (int v = 0; v < 3; v++) {
+						vtxArrayString.append(std::to_string(trueVtxForm[u][v]) + " ");
+						vtxArrElements++;
+					}
+				}
+
+				/////////////
+				// NORMALS //
+				/////////////
+
+				MIntArray normCount;
+				MIntArray triNormIndex;
+				mesh.getNormalIds(normCount, triNormIndex);
+
+				MStreamUtils::stdOutStream() << "triNormIndex: " << triNormIndex << endl;
+
+				MFloatVectorArray normals;
+				mesh.getNormals(normals, MSpace::kWorld);
+
+				int nrOfNormals = normals.length();
+
+				MVectorArray normalsArray;
+
+				for (int i = 0; i < triNormIndex.length(); i++)
+				{
+					normalsArray.append(normals[triNormIndex[i]]);
+				}
+
+				int nrNormals = triNormIndex.length();
+
+				//MVector to string
+				std::string NormArrayString;
+				NormArrayString.append(to_string(nrNormals) + " ");
+				size_t normArrElements = 0;
+
+				for (int u = 0; u < normalsArray.length(); u++)
+				{
+					for (int v = 0; v < 3; v++)
+					{
+						NormArrayString.append(to_string(normalsArray[u][v]) + " ");
+						normArrElements++;
+					}
+				}
+
+				//MStreamUtils::stdOutStream() << "NormArrayString: " << NormArrayString << "_" << endl;
+
+
+				std::string masterTransformString;
+				masterTransformString.append(vtxArrayString + " ");
+				masterTransformString.append(NormArrayString);
+
+				//pass to send
+				bool msgToSend = false;
+				if (vtxArrElements > 0)
+					msgToSend = true;
+
+				if (msgToSend) {
+					sendMsg(CMDTYPE::NEW_NODE, NODE_TYPE::MESH, nrElements, totalTrisCount, objName, masterTransformString);
 				}
 			}
-
-			//sort vtx correctly
-			MIntArray triCount;
-			MIntArray triVertsIndex;
-			mesh.getTriangles(triCount, triVertsIndex);
-			MVectorArray trueVtxForm;
-			for (int i = 0; i < triVertsIndex.length(); i++) {
-				trueVtxForm.append(vtxArrayMessy[triVertsIndex[i]]);
-			}
-
-			int totalTrisCount = triCount.length() * 2;
-
-			//add command + name to string
-			std::string objName = mesh.name().asChar();
-
-			//MVector to string
-			std::string vtxArrayString;
-			size_t vtxArrElements = 0;
-
-			for (int u = 0; u < trueVtxForm.length(); u++) {
-				for (int v = 0; v < 3; v++) {
-					vtxArrayString.append(std::to_string(trueVtxForm[u][v]) + " ");
-					vtxArrElements++;
-				}
-			}
-
-			//pass to send
-			bool msgToSend = false;
-			if (vtxArrElements > 0)
-				msgToSend = true;
-
-			if (msgToSend) {
-				sendMsg(CMDTYPE::NEW_NODE, NODE_TYPE::MESH, nrElements, totalTrisCount, objName, vtxArrayString);
-			}
-
 		}
 	}
 }
