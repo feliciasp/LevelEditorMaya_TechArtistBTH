@@ -372,7 +372,7 @@ void addNode(std::vector<modelFromMaya>& objNameArray, char* buffer, int bufferS
 
 			while (vtxCheck < nrVtx)
 			{
-
+				std::cout << "VERTEX" << std::endl;
 				ss >> tempX >> tempY >> tempZ;
 
 				if (element >= nrOfElements) {
@@ -401,22 +401,24 @@ void addNode(std::vector<modelFromMaya>& objNameArray, char* buffer, int bufferS
 
 			while (normCheck < nrNorm)
 			{
-				ss >> tempNormX, tempNormY, tempNormZ;
+				std::cout << "NORMALS" << std::endl;
+				ss >> tempNormX >> tempNormY >> tempNormZ;
 
 				if (element >= nrOfElements) {
 					std::cout << "Last element fount " << std::endl;
 					break;
 				}
 
-				if (std::stringstream(tempNormX) >> tempFloat && std::stringstream(tempNormY) >> tempFloat && std::stringstream(tempNormZ) >> tempFloat) {
+				arrayNorm[element] = (float)std::stof(tempNormX);
+				std::cout << "NORM X:" << arrayNorm[element] << std::endl;
+				arrayNorm[element + 1] = (float)std::stof(tempNormY);
+				std::cout << "NORM Y:" << arrayNorm[element + 1] << std::endl;
+				arrayNorm[element + 2] = (float)std::stof(tempNormZ);
+				std::cout << "NORM Z" << arrayNorm[element + 2] << std::endl;
 
-					arrayNorm[element] = (float)std::stof(tempX);
-					arrayNorm[element + 1] = (float)std::stof(tempY);
-					arrayNorm[element + 2] = (float)std::stof(tempZ);
-
-					lengthNormArr = lengthNormArr + 3;
-					element = element + 3;
-				}
+				lengthNormArr = lengthNormArr + 3;
+				element = element + 3;
+				
 				normCheck++;
 
 			}
@@ -568,22 +570,24 @@ void updateNode(std::vector<modelFromMaya>& objNameArray, char* buffer, int buff
 
 			while (normCheck < nrNorm)
 			{
-				ss >> tempNormX, tempNormY, tempNormZ;
+				std::cout << "NORMALS" << std::endl;
+				ss >> tempNormX >> tempNormY >> tempNormZ;
 
 				if (element >= nrOfElements) {
 					std::cout << "Last element fount " << std::endl;
 					break;
 				}
 
-				if (std::stringstream(tempNormX) >> tempFloat && std::stringstream(tempNormY) >> tempFloat && std::stringstream(tempNormZ) >> tempFloat) {
+				arrayNorm[element] = (float)std::stof(tempNormX);
+				std::cout << "NORM X:" << arrayNorm[element] << std::endl;
+				arrayNorm[element + 1] = (float)std::stof(tempNormY);
+				std::cout << "NORM Y:" << arrayNorm[element + 1] << std::endl;
+				arrayNorm[element + 2] = (float)std::stof(tempNormZ);
+				std::cout << "NORM Z" << arrayNorm[element + 2] << std::endl;
 
-					arrayNorm[element] = (float)std::stof(tempX);
-					arrayNorm[element + 1] = (float)std::stof(tempY);
-					arrayNorm[element + 2] = (float)std::stof(tempZ);
+				lengthNormArr = lengthNormArr + 3;
+				element = element + 3;
 
-					lengthNormArr = lengthNormArr + 3;
-					element = element + 3;
-				}
 				normCheck++;
 
 			}
@@ -604,7 +608,7 @@ void updateNode(std::vector<modelFromMaya>& objNameArray, char* buffer, int buff
 				memcpy(tempMeshToAdd.vertices, arrayVtx, sizeof(float) * tempMeshToAdd.vertexCount);
 
 				tempMeshToAdd.normals = new float[lengthNormArr];
-				memcpy(tempMeshToAdd.normals, arrayNorm, sizeof(float) * tempMeshToAdd.vertexCount);
+				memcpy(tempMeshToAdd.normals, arrayNorm, sizeof(float) * lengthNormArr);
 
 				rlLoadMesh(&tempMeshToAdd, false);
 

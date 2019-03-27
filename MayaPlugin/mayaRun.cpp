@@ -62,7 +62,7 @@ bool sendMsg(CMDTYPE msgType, NODE_TYPE nodeT, int nrOfElements, int trisCount, 
 	msgHeader.msgSize = msgString.size() + 1;
 	memcpy(msgHeader.objName, objName.c_str(), objName.length());
 
-	MStreamUtils::stdOutStream() << "msgString: " << msgString << "_" << endl;
+	//MStreamUtils::stdOutStream() << "msgString: " << msgString << "_" << endl;
 
 	if (nodeT == NODE_TYPE::MESH) {
 
@@ -88,7 +88,7 @@ bool sendMsg(CMDTYPE msgType, NODE_TYPE nodeT, int nrOfElements, int trisCount, 
 	}
 
 	else {
-
+		
 		// Copy MSG ================== 
 		size_t totalMsgSize = (sizeof(MsgHeader) + msgHeader.msgSize);
 		char* msg = new char[totalMsgSize];
@@ -242,7 +242,7 @@ void nodeMaterialAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug &plu
 	}
 }
 
-//sending 1/3
+//sending 2/3
 void nodeAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug, void* x)
 {
 	MStreamUtils::stdOutStream() << "in nodeAttributeChanged" << endl;
@@ -529,41 +529,66 @@ void meshConnectionChanged(MPlug &plug, MPlug &otherPlug, bool made, void *clien
 	//	 MATERIALS AND TEXTURES 	//
 	//////////////////////////////////
 
-	MObjectArray shaderGroups;
-	MIntArray shaderGroupsIndecies;
-	mesh.getConnectedShaders(0, shaderGroups, shaderGroupsIndecies);
-
-	if (shaderGroups.length() > 0)
+	std::string meshName = mesh.name().asChar();
+	std::string testString = "shaderBallGeomShape";
+	bool shaderBall = false;
+	if (meshName.find(testString) == std::string::npos)
 	{
-		MFnDependencyNode shaderNode(shaderGroups[0]);
-		MPlug surfaceShader = shaderNode.findPlug("surfaceShader");
-		MPlugArray shaderNodeconnections;
-		surfaceShader.connectedTo(shaderNodeconnections, true, false);
+		shaderBall = false;
+	}
+	else {
+		shaderBall = true;
+	}
+	
+	if (!shaderBall)
+	{
+		MObjectArray shaderGroups;
+		MIntArray shaderGroupsIndecies;
+		mesh.getConnectedShaders(0, shaderGroups, shaderGroupsIndecies);
 
-		for (int j = 0; j < shaderNodeconnections.length(); j++)
+		MStreamUtils::stdOutStream() << "mesh name: " << mesh.name() << endl;
+		MStreamUtils::stdOutStream() << "Shaders length: " << shaderGroups.length() << endl;
+
+		for (int i = 0; i < shaderGroups.length(); i++)
 		{
-			if (shaderNodeconnections[j].node().apiType() == MFn::kLambert)
+			MObject temp = shaderGroups[i];
+			MFnDependencyNode nodeFn(temp);
+			MStreamUtils::stdOutStream() << "Shaders connected to mesh: " << nodeFn.name() << endl;
+		}
+
+		if (shaderGroups.length() > 0)
+		{
+			MFnDependencyNode shaderNode(shaderGroups[0]);
+			MPlug surfaceShader = shaderNode.findPlug("surfaceShader");
+			MStreamUtils::stdOutStream() << surfaceShader.name() << endl;
+			MPlugArray shaderNodeconnections;
+			surfaceShader.connectedTo(shaderNodeconnections, true, false);
+
+			for (int j = 0; j < shaderNodeconnections.length(); j++)
 			{
-				MObject lambertObj(shaderNodeconnections[j].node());
-				MCallbackId tempID = MNodeMessage::addAttributeChangedCallback(lambertObj, nodeMaterialAttributeChanged);
-				callbackIdArray.append(tempID);
+				if (shaderNodeconnections[j].node().apiType() == MFn::kLambert)
+				{
+					MObject lambertObj(shaderNodeconnections[j].node());
+					MCallbackId tempID = MNodeMessage::addAttributeChangedCallback(lambertObj, nodeMaterialAttributeChanged);
+					callbackIdArray.append(tempID);
 
-				MFnDependencyNode lambertDepNode(lambertObj);
-				MPlug colorPlug = lambertDepNode.findPlug("color");
+					MFnDependencyNode lambertDepNode(lambertObj);
+					MPlug colorPlug = lambertDepNode.findPlug("color");
 
-				MFnLambertShader lambertItem(lambertObj);
+					MFnLambertShader lambertItem(lambertObj);
 
-				MColor color;
-				MPlug attr;
+					MColor color;
+					MPlug attr;
 
-				attr = lambertItem.findPlug("colorR");
-				attr.getValue(color.r);
-				attr = lambertItem.findPlug("colorG");
-				attr.getValue(color.g);
-				attr = lambertItem.findPlug("colorB");
-				attr.getValue(color.b);
+					attr = lambertItem.findPlug("colorR");
+					attr.getValue(color.r);
+					attr = lambertItem.findPlug("colorG");
+					attr.getValue(color.g);
+					attr = lambertItem.findPlug("colorB");
+					attr.getValue(color.b);
 
-				MStreamUtils::stdOutStream() << "color: " << color.r << ", " << color.g << ", " << color.b << endl;
+					MStreamUtils::stdOutStream() << "color: " << color.r << ", " << color.g << ", " << color.b << endl;
+				}
 			}
 		}
 	}
@@ -572,7 +597,6 @@ void meshConnectionChanged(MPlug &plug, MPlug &otherPlug, bool made, void *clien
 //sending
 void vtxPlugConnected(MPlug & srcPlug, MPlug & destPlug, bool made, void* clientData)
 {
-	MStreamUtils::stdOutStream() << "in vtxPlugCnnected" << endl;
 
 	if (srcPlug.partialName() == "out" && destPlug.partialName() == "i")
 	{
@@ -753,6 +777,11 @@ void nodeAdded(MObject &node, void * clientData)
 		if (Result == MS::kSuccess) {
 			callbackIdArray.append(tempID);
 		}
+
+		tempID = MDGMessage::addConnectionCallback(meshConnectionChanged, NULL, &Result);
+		if (Result == MS::kSuccess) {
+			callbackIdArray.append(tempID);
+		}
 	}
 
 	if (node.hasFn(MFn::kLight))
@@ -790,11 +819,6 @@ void timerCallback(float elapsedTime, float lastTime, void* clientData)
 			unsigned int nrOfPrnts = currentDagNode.parentCount();
 			MObject parentTransf = currentDagNode.parent(0);
 			//Global::displayInfo("PRNT: " + MFnDagNode(parentTransf).name());
-
-			tempID = MDGMessage::addConnectionCallback(meshConnectionChanged, NULL, &Result);
-			if (Result == MS::kSuccess) {
-				callbackIdArray.append(tempID);
-			}
 
 			tempID = MDagMessage::addWorldMatrixModifiedCallback(path, nodeWorldMatrixChanged, NULL, &Result);
 			if (Result == MS::kSuccess) {
