@@ -24,7 +24,8 @@ enum CMDTYPE {
 	NEW_NODE = 1001,
 	UPDATE_NODE = 1002,
 	UPDATE_MATRIX = 1003,
-	UPDATE_NAME = 1004
+	UPDATE_NAME = 1004,
+	UPDATE_MATERIAL = 1005
 };
 
 struct cameraFromMaya
@@ -47,6 +48,7 @@ struct modelFromMaya
 	int index;
 	std::string name;
 	Matrix modelMatrix;
+	Color color;
 };
 
 struct modelPos {
@@ -72,6 +74,7 @@ void addNode(std::vector<modelFromMaya>& objNameArray, char* buffer, int bufferS
 void updateNode(std::vector<modelFromMaya>& objNameArray, char* buffer, int bufferSize, Shader shader, int* nrObjs, int* index, std::vector<lightFromMaya>& lightsFromMaya, std::vector<cameraFromMaya>& cameraFromMaya);
 void updateNodeMatrix(std::vector<modelFromMaya>& objNameArray, char* buffer, int bufferSize, Shader shader, int* nrObjs, int* index, std::vector<lightFromMaya>& lightsFromMaya, std::vector<cameraFromMaya>& cameraFromMaya);
 void updateNodeName(std::vector<modelFromMaya>& objNameArray, char* buffer, int bufferSize, Shader shader, int* nrObjs, int* index, std::vector<lightFromMaya>& lightsFromMaya, std::vector<cameraFromMaya>& cameraFromMaya);
+void updateMaterial(std::vector<modelFromMaya>& objNameArray, char* buffer, int bufferSize, Shader shader, int* nrObjs, int* index, std::vector<lightFromMaya>& lightsFromMaya, std::vector<cameraFromMaya>& cameraFromMaya);
 
 ////light
 //void addLight(std::vector<modelFromMaya>& objNameArray, char* buffer, int bufferSize, Shader shader, int* nrObjs, int* index, std::vector<lightFromMaya>& lightsFromMaya, std::vector<cameraFromMaya>& cameraFromMaya);
@@ -105,7 +108,7 @@ int main()
 	funcMap[UPDATE_NODE] = updateNode;
 	funcMap[UPDATE_MATRIX] = updateNodeMatrix;
 	funcMap[UPDATE_NAME] = updateNodeName;
-
+	funcMap[UPDATE_MATERIAL] = updateMaterial;
 
 
 	int modelIndex = 0;
@@ -372,7 +375,6 @@ void addNode(std::vector<modelFromMaya>& objNameArray, char* buffer, int bufferS
 
 			while (vtxCheck < nrVtx)
 			{
-				std::cout << "VERTEX" << std::endl;
 				ss >> tempX >> tempY >> tempZ;
 
 				if (element >= nrOfElements) {
@@ -401,7 +403,6 @@ void addNode(std::vector<modelFromMaya>& objNameArray, char* buffer, int bufferS
 
 			while (normCheck < nrNorm)
 			{
-				std::cout << "NORMALS" << std::endl;
 				ss >> tempNormX >> tempNormY >> tempNormZ;
 
 				if (element >= nrOfElements) {
@@ -410,11 +411,8 @@ void addNode(std::vector<modelFromMaya>& objNameArray, char* buffer, int bufferS
 				}
 
 				arrayNorm[element] = (float)std::stof(tempNormX);
-				std::cout << "NORM X:" << arrayNorm[element] << std::endl;
 				arrayNorm[element + 1] = (float)std::stof(tempNormY);
-				std::cout << "NORM Y:" << arrayNorm[element + 1] << std::endl;
 				arrayNorm[element + 2] = (float)std::stof(tempNormZ);
-				std::cout << "NORM Z" << arrayNorm[element + 2] << std::endl;
 
 				lengthNormArr = lengthNormArr + 3;
 				element = element + 3;
@@ -452,7 +450,7 @@ void addNode(std::vector<modelFromMaya>& objNameArray, char* buffer, int bufferS
 			Model tempModelToAdd = LoadModelFromMesh(tempMeshToAdd);
 			tempModelToAdd.material.shader = shader1;
 
-			objNameArray.push_back({ tempModelToAdd, *index, objectName, MatrixTranslate(2,0,2) });
+			objNameArray.push_back({ tempModelToAdd, *index, objectName, MatrixTranslate(2,0,2), {0,0,0,1} });
 			*index = *index + 1;
 			*nrObjs = *nrObjs + 1;
 		}
@@ -618,7 +616,7 @@ void updateNode(std::vector<modelFromMaya>& objNameArray, char* buffer, int buff
 				Matrix tempMat = objNameArray[i].modelMatrix;
 
 				objNameArray.erase(objNameArray.begin() + i);
-				objNameArray.insert(objNameArray.begin() + i, { tempModelToAdd, tempIndex, objectName, tempMat });
+				objNameArray.insert(objNameArray.begin() + i, { tempModelToAdd, tempIndex, objectName, tempMat, {0,0,0,1} });
 			}
 		}
 
@@ -718,7 +716,7 @@ void updateNodeMatrix(std::vector<modelFromMaya>& objNameArray, char* buffer, in
 				Matrix newModelMatrix = MatrixTranslate(matrixPos[0], matrixPos[1], matrixPos[2]);
 
 				objNameArray.erase(objNameArray.begin() + i);
-				objNameArray.insert(objNameArray.begin() + i, { tempModel, tempIndex2, tempName2, newModelMatrix });
+				objNameArray.insert(objNameArray.begin() + i, { tempModel, tempIndex2, tempName2, newModelMatrix, {0,0,0,1} });
 			}
 		}
 
@@ -796,7 +794,7 @@ void updateNodeName(std::vector<modelFromMaya>& objNameArray, char* buffer, int 
 				Matrix tempMatrix = objNameArray[i].modelMatrix;
 
 				objNameArray.erase(objNameArray.begin() + i);
-				objNameArray.insert(objNameArray.begin() + i, { tempModel, tempIndex, newName, tempMatrix });
+				objNameArray.insert(objNameArray.begin() + i, { tempModel, tempIndex, newName, tempMatrix, {0,0,0,1} });
 			}
 		}
 		delete[] msgElements;
