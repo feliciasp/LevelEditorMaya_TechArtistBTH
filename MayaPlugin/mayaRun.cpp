@@ -181,6 +181,7 @@ void activeCamera(const MString &panelName, void* cliendData) {
 	}
 }
 
+//sending
 void nodeTextureAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug, void* x)
 {
 	MObject texObj(plug.node());
@@ -574,7 +575,7 @@ void nodeWorldMatrixChangedLight(MObject &node, MDagMessage::MatrixModifiedFlags
 	}
 }
 
-//sending 1/2
+//sending 2/2
 void meshConnectionChanged(MPlug &plug, MPlug &otherPlug, bool made, void *clientData)
 {
 	MDagPath path;
@@ -829,42 +830,45 @@ void vtxPlugConnected(MPlug & srcPlug, MPlug & destPlug, bool made, void* client
 				// NORMALS //
 				/////////////
 
-				//MIntArray normCount;
-				//MIntArray triNormIndex;
-				//mesh.getNormalIds(normCount, triNormIndex);
+				MIntArray normCount;
+				MIntArray triNormIndex;
+				MStatus result = mesh.getNormalIds(normCount, triNormIndex);
 
-				//MStreamUtils::stdOutStream() << "triNormIndex: " << triNormIndex << endl;
+				if (result)
+				{
+					MStreamUtils::stdOutStream() << "triNormCount: " << triNormIndex.length() << endl;
+				}
 
-				//MFloatVectorArray normals;
-				//mesh.getNormals(normals, MSpace::kWorld);
+				////MFloatVectorArray normals;
+				////mesh.getNormals(normals, MSpace::kWorld);
 
-				//int nrOfNormals = normals.length();
+				////int nrOfNormals = normals.length();
 
-				//MVectorArray normalsArray;
+				////MVectorArray normalsArray;
 
-				//for (int i = 0; i < triNormIndex.length(); i++)
-				//{
-				//	normalsArray.append(normals[triNormIndex[i]]);
-				//	MStreamUtils::stdOutStream() << "triNormIndex: " << triNormIndex[i] << endl;
-				//}
+				////for (int i = 0; i < triNormIndex.length(); i++)
+				////{
+				////	normalsArray.append(normals[triNormIndex[i]]);
+				////	MStreamUtils::stdOutStream() << "triNormIndex: " << triNormIndex[i] << endl;
+				////}
 
-				//int nrNormals = triNormIndex.length();
+				////int nrNormals = triNormIndex.length();
 
-				////MVector to string
-				//std::string NormArrayString;
-				//NormArrayString.append(to_string(nrNormals) + " ");
-				//size_t normArrElements = 0;
+				//////MVector to string
+				////std::string NormArrayString;
+				////NormArrayString.append(to_string(nrNormals) + " ");
+				////size_t normArrElements = 0;
 
-				//for (int u = 0; u < normalsArray.length(); u++)
-				//{
-				//	for (int v = 0; v < 3; v++)
-				//	{
-				//		NormArrayString.append(to_string(normalsArray[u][v]) + " ");
-				//		normArrElements++;
-				//	}
-				//}
+				////for (int u = 0; u < normalsArray.length(); u++)
+				////{
+				////	for (int v = 0; v < 3; v++)
+				////	{
+				////		NormArrayString.append(to_string(normalsArray[u][v]) + " ");
+				////		normArrElements++;
+				////	}
+				////}
 
-				////MStreamUtils::stdOutStream() << "NormArrayString: " << NormArrayString << "_" << endl;
+				//////MStreamUtils::stdOutStream() << "NormArrayString: " << NormArrayString << "_" << endl;
 
 				std:string NormArrayString = "";
 				for (int i = 0; i < 36; i++)

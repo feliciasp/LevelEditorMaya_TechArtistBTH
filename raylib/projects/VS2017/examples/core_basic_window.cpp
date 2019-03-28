@@ -204,7 +204,6 @@ int main()
 			//camera.up = cameraMaya[0].up;
 
 			SetShaderValueMatrix(shader1, viewLoc, GetCameraMatrix(camera));
-
 			SetShaderValue(shader1, lightLoc, Vector3ToFloat(lightsFromMaya[0].lightPos), 1);
 
             ClearBackground(RAYWHITE);
