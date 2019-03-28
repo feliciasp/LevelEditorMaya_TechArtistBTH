@@ -184,17 +184,37 @@ void activeCamera(const MString &panelName, void* cliendData) {
 void nodeTextureAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug, void* x)
 {
 	MObject texObj(plug.node());
+	MFnDagNode textDag(texObj);
+
+	MPlugArray connections;
+	plug.connectedTo(connections, true, true);
+	std::string materialName;
+
+	if (connections.length() > 0)
+	{
+		std::string materialNamePlug = connections[0].name().asChar();
+		std::string splitElement = ".";
+		if (materialNamePlug.length() > 0)
+		{
+			materialName = materialNamePlug.substr(0, materialNamePlug.find(splitElement));
+			MStreamUtils::stdOutStream() << "name mat 2: " << materialName << endl;
+		}
+	}
 
 	MFnDependencyNode textureNode(texObj);
 	MPlug fileTextureName = textureNode.findPlug("ftn");
-
+	MString fileName;
 	if (plug.name() == fileTextureName.name())
 	{
-		MString fileName;
 		fileTextureName.getValue(fileName);
 		MStreamUtils::stdOutStream() << fileName << endl;
-
 	}
+
+	std::string materialString = "";
+	materialString.append(materialName + " ");
+	materialString.append("texture ");
+	materialString.append(to_string(fileName));
+
 }
 
 void nodeMaterialAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug, void* x)
