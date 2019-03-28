@@ -805,6 +805,7 @@ void updateMaterial(std::vector<modelFromMaya>& objNameArray, char* buffer, int 
 			std::cout << "is texture" << std::endl;
 			std::string texturePath;
 			ss >> texturePath;
+			std::cout << "texture: " << texturePath << std::endl;
 			texture = LoadTexture(texturePath.c_str());
 		}
 
@@ -824,16 +825,15 @@ void updateMaterial(std::vector<modelFromMaya>& objNameArray, char* buffer, int 
 
 				objNameArray.erase(objNameArray.begin() + i);
 
-				
-
 				if (colorOrTexture == "color")
 				{
 					objNameArray.insert(objNameArray.begin() + i, { tempModel, tempIndex2, tempName2, newModelMatrix, tempColor, tempMaterialName });
 				}
 				else if (colorOrTexture == "texture")
 				{
-					objNameArray.insert(objNameArray.begin() + i, { tempModel, tempIndex2, tempName2, newModelMatrix, tempColor, tempMaterialName });
-					objNameArray[i].model.material.maps[MAP_DIFFUSE].texture = texture;
+					std::cout << "texture stuff: " << texture.height << std::endl;
+					tempModel.material.maps[MAP_DIFFUSE].texture = texture;
+					objNameArray.insert(objNameArray.begin() + i, { tempModel, tempIndex2, tempName2, newModelMatrix, {255,255,255,255}, tempMaterialName });
 				}
 			}
 		}
@@ -893,6 +893,7 @@ void updateMaterialName(std::vector<modelFromMaya>& objNameArray, char* buffer, 
 			std::cout << "is texture" << std::endl;
 			std::string texturePath;
 			ss >> texturePath;
+			std::cout << "texture: " << texturePath << std::endl;
 			texture = LoadTexture(texturePath.c_str());
 		}
 
@@ -914,14 +915,14 @@ void updateMaterialName(std::vector<modelFromMaya>& objNameArray, char* buffer, 
 
 				if (colorOrTexture == "color")
 				{
-					
 					objNameArray.insert(objNameArray.begin() + i, { tempModel, tempIndex2, tempName2, newModelMatrix, tempColor, tempMaterialName });
 					std::cout << "tempColor: " << tempColor.r << ", " << tempColor.g << ", " << tempColor.b << std::endl;
 				}
 				else if (colorOrTexture == "texture")
 				{
+					std::cout << "texture stuff: " << texture.height << std::endl;
+					tempModel.material.maps[MAP_DIFFUSE].texture = texture;
 					objNameArray.insert(objNameArray.begin() + i, { tempModel, tempIndex2, tempName2, newModelMatrix, tempColor, tempMaterialName });
-					objNameArray[i].model.material.maps[MAP_DIFFUSE].texture = texture;
 				}
 			}
 		}

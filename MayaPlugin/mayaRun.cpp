@@ -219,12 +219,17 @@ void nodeTextureAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug
 
 
 				MStreamUtils::stdOutStream() << "final sting: " << materialString << endl;
+
+				bool msgToSend = false;
+				if (materialString.length() > 0)
+					msgToSend = true;
+
+				if (msgToSend) {
+					sendMsg(CMDTYPE::UPDATE_MATERIAL, NODE_TYPE::MESH, materialString.length(), 0, "noObjName", materialString);
+				}
 			}
 		}
 	}
-
-	
-
 }
 
 //sending
@@ -583,6 +588,7 @@ void meshConnectionChanged(MPlug &plug, MPlug &otherPlug, bool made, void *clien
 
 	std::string meshName = mesh.name().asChar();
 	std::string testString = "shaderBallGeomShape";
+	bool hasTexture = false;
 	bool shaderBall = false;
 	if (meshName.find(testString) == std::string::npos)
 	{
@@ -627,36 +633,84 @@ void meshConnectionChanged(MPlug &plug, MPlug &otherPlug, bool made, void *clien
 					MFnDependencyNode lambertDepNode(lambertObj);
 					MPlug colorPlug = lambertDepNode.findPlug("color");
 
-					MFnLambertShader lambertItem(lambertObj);
+					////////////////////
 
-					MColor color;
-					MPlug attr;
+					MPlugArray connetionsColor;
+					colorPlug.connectedTo(connetionsColor, true, false);
 
-					attr = lambertItem.findPlug("colorR");
-					attr.getValue(color.r);
-					attr = lambertItem.findPlug("colorG");
-					attr.getValue(color.g);
-					attr = lambertItem.findPlug("colorB");
-					attr.getValue(color.b);
+					for (int x = 0; x < connetionsColor.length(); x++)
+					{
+						if (connetionsColor[x].node().apiType() == MFn::kFileTexture)
+						{
+							MObject textureObj(connetionsColor[x].node());
+							
+							MFnDependencyNode textureNode(textureObj);
+							MPlug fileTextureName = textureNode.findPlug("ftn");
+							MString fileName;
+
+							fileTextureName.getValue(fileName);
+							MStreamUtils::stdOutStream() << fileName << endl;
+
+							std::string fileNameString = fileName.asChar();
+
+							if (fileNameString.length() > 0)
+							{
+								MStreamUtils::stdOutStream() << fileName << endl;
+								MStreamUtils::stdOutStream() << fileName.asChar() << endl;
+								std::string materialString = "";
+								materialString.append(lambertDepNode.name().asChar());
+								materialString.append(" texture ");
+								materialString.append(fileNameString);
 
 
-					std::string colors = "";
-					colors.append(lambertDepNode.name().asChar());
-					colors.append(" ");
-					colors.append("color ");
-					colors.append(to_string(color.r) + " ");
-					colors.append(to_string(color.g) + " ");
-					colors.append(to_string(color.b));
+								MStreamUtils::stdOutStream() << "final sting: " << materialString << endl;
 
-					MStreamUtils::stdOutStream() << "colors: " << colors << endl;
+								bool msgToSend = false;
+								if (materialString.length() > 0)
+									msgToSend = true;
 
-					//pass to send
-					bool msgToSend = false;
-					if (colors.length() > 0)
-						msgToSend = true;
+								if (msgToSend) {
+									sendMsg(CMDTYPE::UPDATE_MATERIAL, NODE_TYPE::MESH, materialString.length(), 0, "noObjName", materialString);
+								}
+							}
 
-					if (msgToSend) {
-						sendMsg(CMDTYPE::UPDATE_MATERIALNAME, NODE_TYPE::MESH, colors.length(), 0, mesh.name().asChar(), colors);
+							hasTexture = true;
+						}
+					}
+
+					if (hasTexture == false)
+					{
+						MFnLambertShader lambertItem(lambertObj);
+
+						MColor color;
+						MPlug attr;
+
+						attr = lambertItem.findPlug("colorR");
+						attr.getValue(color.r);
+						attr = lambertItem.findPlug("colorG");
+						attr.getValue(color.g);
+						attr = lambertItem.findPlug("colorB");
+						attr.getValue(color.b);
+
+
+						std::string colors = "";
+						colors.append(lambertDepNode.name().asChar());
+						colors.append(" ");
+						colors.append("color ");
+						colors.append(to_string(color.r) + " ");
+						colors.append(to_string(color.g) + " ");
+						colors.append(to_string(color.b));
+
+						MStreamUtils::stdOutStream() << "colors: " << colors << endl;
+
+						//pass to send
+						bool msgToSend = false;
+						if (colors.length() > 0)
+							msgToSend = true;
+
+						if (msgToSend) {
+							sendMsg(CMDTYPE::UPDATE_MATERIALNAME, NODE_TYPE::MESH, colors.length(), 0, mesh.name().asChar(), colors);
+						}
 					}
 				}
 			}
