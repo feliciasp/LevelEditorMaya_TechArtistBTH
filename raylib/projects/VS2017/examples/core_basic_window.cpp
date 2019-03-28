@@ -311,7 +311,7 @@ CMDTYPE recvFromMaya(char* buffer)
 			
 		}
 
-		std::cout << "print msg: " << msg << "_" << std::endl;
+		//std::cout << "print msg: " << msg << "_" << std::endl;
 		delete[] msg;
 	}
 
@@ -785,19 +785,20 @@ void updateMaterial(std::vector<modelFromMaya>& objNameArray, char* buffer, int 
 		std::string matieralName;
 		ss >> matieralName;
 
-		Color newColor = { 0,0,0,255 };
+		std::cout << "matName from buffer: " << matieralName << std::endl;
+
 		Texture2D texture;
 		std::string colorOrTexture;
 		ss >> colorOrTexture;
 
+		float lightColor[4] = { 255,255,255,255 };
+
 		if (colorOrTexture == "color")
 		{
 			std::cout << "is color" << std::endl;
-			float color[4] = { 0, 0, 0, 255 };
-			ss >> color[0] >> color[1] >> color[2];
-			newColor.r = color[0] * 255;
-			newColor.g = color[1] * 255;
-			newColor.b = color[2] * 255;
+
+			ss >> lightColor[0] >> lightColor[1] >> lightColor[2];
+			std::cout << "tempColor: " << lightColor[0] << ", " << lightColor[1] << ", " << lightColor[2] << std::endl;
 		}
 		else if (colorOrTexture == "texture")
 		{
@@ -811,28 +812,27 @@ void updateMaterial(std::vector<modelFromMaya>& objNameArray, char* buffer, int 
 		{
 			if (objNameArray[i].materialName == matieralName)
 			{
+				std::cout << "matName " << objNameArray[i].materialName << std::endl;
+
 				int tempIndex = objNameArray[i].index;
 				Model tempModel = objNameArray[i].model;
 				int tempIndex2 = objNameArray[i].index;
 				std::string tempName2 = objNameArray[i].name;
 				Matrix newModelMatrix = objNameArray[i].modelMatrix;
-				Color tempColor = newColor;
+				Color tempColor = { lightColor[0] * 255, lightColor[1] * 255, lightColor[2] * 255, 255 };
 				std::string tempMaterialName = objNameArray[i].materialName;
 
 				objNameArray.erase(objNameArray.begin() + i);
 
-				if(colorOrTexture == "color")
-				{	
-					if (objNameArray[i].model.material.maps[MAP_DIFFUSE].texture.height > 0)
-					{
-						std::cout << "HAS TEXTURE" << std::endl;
-						UnloadTexture(objNameArray[i].model.material.maps[MAP_DIFFUSE].texture);
-					}
+				
+
+				if (colorOrTexture == "color")
+				{
 					objNameArray.insert(objNameArray.begin() + i, { tempModel, tempIndex2, tempName2, newModelMatrix, tempColor, tempMaterialName });
 				}
 				else if (colorOrTexture == "texture")
 				{
-					objNameArray.insert(objNameArray.begin() + i, { tempModel, tempIndex2, tempName2, newModelMatrix, newColor, tempMaterialName });
+					objNameArray.insert(objNameArray.begin() + i, { tempModel, tempIndex2, tempName2, newModelMatrix, tempColor, tempMaterialName });
 					objNameArray[i].model.material.maps[MAP_DIFFUSE].texture = texture;
 				}
 			}
@@ -853,6 +853,7 @@ void updateMaterialName(std::vector<modelFromMaya>& objNameArray, char* buffer, 
 	if (msgHeader.nodeType == NODE_TYPE::MESH)
 	{
 		std::cout << "MATERIAL" << std::endl;
+		std::cout << "meshName: " << objectName << std::endl;
 		msgMesh mesh = {};
 
 		memcpy((char*)&mesh, buffer + sizeof(MsgHeader), sizeof(msgMesh));	//mesh struct
@@ -864,6 +865,8 @@ void updateMaterialName(std::vector<modelFromMaya>& objNameArray, char* buffer, 
 		std::string msgString(msgElements, msgHeader.msgSize);
 		std::istringstream ss(msgString);
 
+		std::cout << "msgString: " << msgString << "__________________________" << std::endl;
+
 		std::string materialName;
 		ss >> materialName;
 		std::cout << "mat name: " << materialName << std::endl;
@@ -873,14 +876,17 @@ void updateMaterialName(std::vector<modelFromMaya>& objNameArray, char* buffer, 
 		std::string colorOrTexture;
 		ss >> colorOrTexture;
 
+		std::cout << "colorOrTexture: " << colorOrTexture << std::endl;
+		float lightColor[4] = { 255,255,255,255 };
+
 		if (colorOrTexture == "color")
 		{
+			
 			std::cout << "is color" << std::endl;
-			float color[4] = { 0, 0, 0, 255 };
-			ss >> color[0] >> color[1] >> color[2];
-			newColor.r = color[0] * 255;
-			newColor.g = color[1] * 255;
-			newColor.b = color[2] * 255;
+			
+			ss >> lightColor[0] >> lightColor[1] >> lightColor[2];
+			std::cout << "tempColor: " << lightColor[0] << ", " << lightColor[1] << ", " << lightColor[2] << std::endl; 
+
 		} 
 		else if (colorOrTexture == "texture")
 		{
@@ -892,8 +898,6 @@ void updateMaterialName(std::vector<modelFromMaya>& objNameArray, char* buffer, 
 
 		for (int i = 0; i < *nrObjs; i++)
 		{
-			std::cout << "objName: " << objNameArray[i].name << std::endl;
-			std::cout << "tempName: " << objectName << std::endl;
 			if (objNameArray[i].name == objectName)
 			{
 				int tempIndex = objNameArray[i].index;
@@ -901,25 +905,22 @@ void updateMaterialName(std::vector<modelFromMaya>& objNameArray, char* buffer, 
 				int tempIndex2 = objNameArray[i].index;
 				std::string tempName2 = objNameArray[i].name;
 				Matrix newModelMatrix = objNameArray[i].modelMatrix;
-				Color tempColor = newColor;
+				Color tempColor = { lightColor[0] * 255, lightColor[1] * 255, lightColor[2] * 255, 255 };
 				std::string tempMaterialName = materialName;
 
-				std::cout << tempColor.r << ", " << tempColor.g << ", " << tempColor.b << std::endl;
+				std::cout << "matName: " << materialName << std::endl;
 
 				objNameArray.erase(objNameArray.begin() + i);
 
 				if (colorOrTexture == "color")
 				{
-					if (objNameArray[i].model.material.maps[MAP_DIFFUSE].texture.height > 0)
-					{
-						std::cout << "HAS TEXTURE" << std::endl;
-						UnloadTexture(objNameArray[i].model.material.maps[MAP_DIFFUSE].texture);
-					}
-					objNameArray.insert(objNameArray.begin() + i, { tempModel, tempIndex2, tempName2, newModelMatrix, newColor, tempMaterialName });
+					
+					objNameArray.insert(objNameArray.begin() + i, { tempModel, tempIndex2, tempName2, newModelMatrix, tempColor, tempMaterialName });
+					std::cout << "tempColor: " << tempColor.r << ", " << tempColor.g << ", " << tempColor.b << std::endl;
 				}
 				else if (colorOrTexture == "texture")
 				{
-					objNameArray.insert(objNameArray.begin() + i, { tempModel, tempIndex2, tempName2, newModelMatrix, newColor, tempMaterialName });
+					objNameArray.insert(objNameArray.begin() + i, { tempModel, tempIndex2, tempName2, newModelMatrix, tempColor, tempMaterialName });
 					objNameArray[i].model.material.maps[MAP_DIFFUSE].texture = texture;
 				}
 			}

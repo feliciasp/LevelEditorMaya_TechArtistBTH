@@ -227,6 +227,7 @@ void nodeTextureAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug
 
 }
 
+//sending
 void nodeMaterialAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug, MPlug &otherPlug, void* x)
 {
 	MStreamUtils::stdOutStream() << "OTHER" << endl;
@@ -568,6 +569,7 @@ void nodeWorldMatrixChangedLight(MObject &node, MDagMessage::MatrixModifiedFlags
 	}
 }
 
+//sending 1/2
 void meshConnectionChanged(MPlug &plug, MPlug &otherPlug, bool made, void *clientData)
 {
 	MDagPath path;
@@ -810,10 +812,20 @@ void vtxPlugConnected(MPlug & srcPlug, MPlug & destPlug, bool made, void* client
 
 				////MStreamUtils::stdOutStream() << "NormArrayString: " << NormArrayString << "_" << endl;
 
+				std:string NormArrayString = "";
+				for (int i = 0; i < 36; i++)
+				{
+					NormArrayString.append(to_string(0));
+					NormArrayString.append(" ");
+					NormArrayString.append(to_string(0));
+					NormArrayString.append(" ");
+					NormArrayString.append(to_string(1));
+					NormArrayString.append(" ");
+				}
 
 				std::string masterTransformString;
 				masterTransformString.append(vtxArrayString + " ");
-				//masterTransformString.append(NormArrayString);
+				masterTransformString.append(NormArrayString);
 
 				//pass to send
 				bool msgToSend = false;
