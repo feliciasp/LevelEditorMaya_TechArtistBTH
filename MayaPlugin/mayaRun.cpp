@@ -25,7 +25,8 @@ enum CMDTYPE {
 	UPDATE_NODE = 1002,
 	UPDATE_MATRIX = 1003,
 	UPDATE_NAME = 1004,
-	UPDATE_MATERIAL = 1005
+	UPDATE_MATERIAL = 1005,
+	UPDATE_MATERIALNAME = 1006
 
 };
 struct MsgHeader {
@@ -201,19 +202,6 @@ void nodeMaterialAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug &plu
 	MStreamUtils::stdOutStream() << "OTHER" << endl;
 	MObject lamObj(plug.node());
 	MFnDependencyNode lambertDepNode(lamObj);
-
-
-	MPlug surfaceShader = lambertDepNode.findPlug("outColor");
-
-	MStreamUtils::stdOutStream() << "outColor plugname: " << surfaceShader.name() << endl;
-
-	MPlugArray shaderNodeconnections;
-	surfaceShader.connectedTo(shaderNodeconnections, true, false);
-
-	for (int i = 0; i < shaderNodeconnections.length(); i++)
-	{
-		MStreamUtils::stdOutStream() << "connecting to: " << shaderNodeconnections[i].name() << endl;
-	}
 	
 
 	bool hasTexture = false;
@@ -253,7 +241,7 @@ void nodeMaterialAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug &plu
 			attr.getValue(color.b);
 
 			std::string colors = "";
-			//colors.append(mesh.name().asChar());
+			colors.append(lambertDepNode.name().asChar());
 			colors.append(" ");
 			colors.append("color ");
 			colors.append(to_string(color.r) + " ");
@@ -263,13 +251,13 @@ void nodeMaterialAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug &plu
 			MStreamUtils::stdOutStream() << "colors: " << colors << endl;
 
 			//pass to send
-			/*bool msgToSend = false;
+			bool msgToSend = false;
 			if (colors.length() > 0)
 				msgToSend = true;
 
 			if (msgToSend) {
-				sendMsg(CMDTYPE::UPDATE_MATERIAL, NODE_TYPE::MESH, colors.length(), 0, mesh.name().asChar(), colors);
-			}*/
+				sendMsg(CMDTYPE::UPDATE_MATERIAL, NODE_TYPE::MESH, colors.length(), 0, "noObjName", colors);
+			}
 		}
 	}
 }
@@ -560,8 +548,6 @@ void meshConnectionChanged(MPlug &plug, MPlug &otherPlug, bool made, void *clien
 	//////////////////////////////////
 	//	 MATERIALS AND TEXTURES 	//
 	//////////////////////////////////
-	MStreamUtils::stdOutStream() << "plug.node()" << plug.name() << endl;
-	MStreamUtils::stdOutStream() << "otherPlug.node()" << otherPlug.name() << endl;
 
 	std::string meshName = mesh.name().asChar();
 	std::string testString = "shaderBallGeomShape";
@@ -621,8 +607,9 @@ void meshConnectionChanged(MPlug &plug, MPlug &otherPlug, bool made, void *clien
 					attr = lambertItem.findPlug("colorB");
 					attr.getValue(color.b);
 
+
 					std::string colors = "";
-					colors.append(mesh.name().asChar());
+					colors.append(lambertDepNode.name().asChar());
 					colors.append(" ");
 					colors.append("color ");
 					colors.append(to_string(color.r) + " ");
@@ -637,7 +624,7 @@ void meshConnectionChanged(MPlug &plug, MPlug &otherPlug, bool made, void *clien
 						msgToSend = true;
 
 					if (msgToSend) {
-						sendMsg(CMDTYPE::UPDATE_MATERIAL, NODE_TYPE::MESH, colors.length(), 0, mesh.name().asChar(), colors);
+						sendMsg(CMDTYPE::UPDATE_MATERIALNAME, NODE_TYPE::MESH, colors.length(), 0, mesh.name().asChar(), colors);
 					}
 				}
 			}
@@ -660,8 +647,6 @@ void vtxPlugConnected(MPlug & srcPlug, MPlug & destPlug, bool made, void* client
 
 			MPlugArray plugArray;
 			destPlug.connectedTo(plugArray, true, true);
-
-			MStreamUtils::stdOutStream() << "parent: " << plugArray[0].name() << endl;
 
 			std::string testString = "polyTriangulate";
 			std::string name = plugArray[0].name().asChar();

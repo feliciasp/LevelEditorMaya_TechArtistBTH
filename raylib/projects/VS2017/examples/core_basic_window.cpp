@@ -25,7 +25,8 @@ enum CMDTYPE {
 	UPDATE_NODE = 1002,
 	UPDATE_MATRIX = 1003,
 	UPDATE_NAME = 1004,
-	UPDATE_MATERIAL = 1005
+	UPDATE_MATERIAL = 1005,
+	UPDATE_MATERIALNAME = 1006
 };
 
 struct cameraFromMaya
@@ -49,6 +50,7 @@ struct modelFromMaya
 	std::string name;
 	Matrix modelMatrix;
 	Color color;
+	std::string materialName;
 };
 
 struct modelPos {
@@ -75,6 +77,7 @@ void updateNode(std::vector<modelFromMaya>& objNameArray, char* buffer, int buff
 void updateNodeMatrix(std::vector<modelFromMaya>& objNameArray, char* buffer, int bufferSize, Shader shader, int* nrObjs, int* index, std::vector<lightFromMaya>& lightsFromMaya, std::vector<cameraFromMaya>& cameraFromMaya);
 void updateNodeName(std::vector<modelFromMaya>& objNameArray, char* buffer, int bufferSize, Shader shader, int* nrObjs, int* index, std::vector<lightFromMaya>& lightsFromMaya, std::vector<cameraFromMaya>& cameraFromMaya);
 void updateMaterial(std::vector<modelFromMaya>& objNameArray, char* buffer, int bufferSize, Shader shader, int* nrObjs, int* index, std::vector<lightFromMaya>& lightsFromMaya, std::vector<cameraFromMaya>& cameraFromMaya);
+void updateMaterialName(std::vector<modelFromMaya>& objNameArray, char* buffer, int bufferSize, Shader shader, int* nrObjs, int* index, std::vector<lightFromMaya>& lightsFromMaya, std::vector<cameraFromMaya>& cameraFromMaya);
 
 ////light
 //void addLight(std::vector<modelFromMaya>& objNameArray, char* buffer, int bufferSize, Shader shader, int* nrObjs, int* index, std::vector<lightFromMaya>& lightsFromMaya, std::vector<cameraFromMaya>& cameraFromMaya);
@@ -109,6 +112,7 @@ int main()
 	funcMap[UPDATE_MATRIX] = updateNodeMatrix;
 	funcMap[UPDATE_NAME] = updateNodeName;
 	funcMap[UPDATE_MATERIAL] = updateMaterial;
+	funcMap[UPDATE_MATERIALNAME] = updateMaterialName;
 
 
 	int modelIndex = 0;
@@ -230,7 +234,7 @@ int main()
 				auto m = modelsFromMaya[i];
 				auto l = GetShaderLocation(m.model.material.shader, "model");
 				SetShaderValueMatrix( m.model.material.shader, modelLoc, m.modelMatrix);
-				DrawModel(m.model,{}, 1.0, lightsFromMaya[0].color);
+				DrawModel(m.model,{}, 1.0, m.color);
 			}
 
             DrawGrid(10, 1.0f);     // Draw a grid
@@ -450,7 +454,7 @@ void addNode(std::vector<modelFromMaya>& objNameArray, char* buffer, int bufferS
 			Model tempModelToAdd = LoadModelFromMesh(tempMeshToAdd);
 			tempModelToAdd.material.shader = shader1;
 
-			objNameArray.push_back({ tempModelToAdd, *index, objectName, MatrixTranslate(2,0,2), {0,0,0,1} });
+			objNameArray.push_back({ tempModelToAdd, *index, objectName, MatrixTranslate(2,0,2), {120,255,200,255}, "materialName" });
 			*index = *index + 1;
 			*nrObjs = *nrObjs + 1;
 		}
@@ -614,9 +618,11 @@ void updateNode(std::vector<modelFromMaya>& objNameArray, char* buffer, int buff
 				tempModelToAdd.material.shader = shader1;
 
 				Matrix tempMat = objNameArray[i].modelMatrix;
+				Color tempColor = objNameArray[i].color;
+				std::string tempMaterialName = objNameArray[i].materialName;
 
 				objNameArray.erase(objNameArray.begin() + i);
-				objNameArray.insert(objNameArray.begin() + i, { tempModelToAdd, tempIndex, objectName, tempMat, {0,0,0,1} });
+				objNameArray.insert(objNameArray.begin() + i, { tempModelToAdd, tempIndex, objectName, tempMat, tempColor, tempMaterialName });
 			}
 		}
 
@@ -714,9 +720,11 @@ void updateNodeMatrix(std::vector<modelFromMaya>& objNameArray, char* buffer, in
 				int tempIndex2 = objNameArray[i].index;
 				std::string tempName2 = objNameArray[i].name;
 				Matrix newModelMatrix = MatrixTranslate(matrixPos[0], matrixPos[1], matrixPos[2]);
+				Color tempColor = objNameArray[i].color;
+				std::string tempMaterialName = objNameArray[i].materialName;
 
 				objNameArray.erase(objNameArray.begin() + i);
-				objNameArray.insert(objNameArray.begin() + i, { tempModel, tempIndex2, tempName2, newModelMatrix, {0,0,0,1} });
+				objNameArray.insert(objNameArray.begin() + i, { tempModel, tempIndex2, tempName2, newModelMatrix, tempColor, tempMaterialName });
 			}
 		}
 
@@ -750,6 +758,132 @@ void updateNodeMatrix(std::vector<modelFromMaya>& objNameArray, char* buffer, in
 		delete[] msgElements;
 	}
 	
+}
+
+void updateMaterial(std::vector<modelFromMaya>& objNameArray, char* buffer, int bufferSize, Shader shader, int* nrObjs, int* index, std::vector<lightFromMaya>& lightsFromMaya, std::vector<cameraFromMaya>& cameraFromMaya)
+{
+	MsgHeader msgHeader = {};
+	std::string objectName = "";
+	memcpy((char*)&msgHeader, buffer, sizeof(MsgHeader));
+	objectName = msgHeader.objName;
+	objectName = objectName.substr(0, msgHeader.nameLen);
+
+	if (msgHeader.nodeType == NODE_TYPE::MESH)
+	{
+		std::cout << "MATERIAL COLOR UPDATE" << std::endl;
+		msgMesh mesh = {};
+
+		memcpy((char*)&mesh, buffer + sizeof(MsgHeader), sizeof(msgMesh));	//mesh struct
+
+		char* msgElements = new char[msgHeader.msgSize];
+		memcpy((char*)msgElements, buffer + sizeof(MsgHeader) + sizeof(msgMesh), msgHeader.msgSize);	//copy msg
+
+		// setup stringstream
+		std::string msgString(msgElements, msgHeader.msgSize);
+		std::istringstream ss(msgString);
+
+		std::string matieralName;
+		ss >> matieralName;
+
+		Color newColor = { 0,0,0,255 };
+		std::string colorOrTexture;
+		ss >> colorOrTexture;
+
+		if (colorOrTexture == "color")
+		{
+			std::cout << "is color" << std::endl;
+			float color[4] = { 0, 0, 0, 255 };
+			ss >> color[0] >> color[1] >> color[2];
+			newColor.r = color[0] * 255;
+			newColor.g = color[1] * 255;
+			newColor.b = color[2] * 255;
+		};
+
+		for (int i = 0; i < *nrObjs; i++)
+		{
+			if (objNameArray[i].materialName == matieralName)
+			{
+				int tempIndex = objNameArray[i].index;
+				Model tempModel = objNameArray[i].model;
+				int tempIndex2 = objNameArray[i].index;
+				std::string tempName2 = objNameArray[i].name;
+				Matrix newModelMatrix = objNameArray[i].modelMatrix;
+				Color tempColor = newColor;
+				std::string tempMaterialName = objNameArray[i].materialName;
+
+				objNameArray.erase(objNameArray.begin() + i);
+				objNameArray.insert(objNameArray.begin() + i, { tempModel, tempIndex2, tempName2, newModelMatrix, tempColor, tempMaterialName });
+			}
+		}
+
+		delete[] msgElements;
+	}
+}
+
+void updateMaterialName(std::vector<modelFromMaya>& objNameArray, char* buffer, int bufferSize, Shader shader, int* nrObjs, int* index, std::vector<lightFromMaya>& lightsFromMaya, std::vector<cameraFromMaya>& cameraFromMaya)
+{
+	MsgHeader msgHeader = {};
+	std::string objectName = "";
+	memcpy((char*)&msgHeader, buffer, sizeof(MsgHeader));
+	objectName = msgHeader.objName;
+	objectName = objectName.substr(0, msgHeader.nameLen);
+
+	if (msgHeader.nodeType == NODE_TYPE::MESH)
+	{
+		std::cout << "MATERIAL" << std::endl;
+		msgMesh mesh = {};
+
+		memcpy((char*)&mesh, buffer + sizeof(MsgHeader), sizeof(msgMesh));	//mesh struct
+
+		char* msgElements = new char[msgHeader.msgSize];
+		memcpy((char*)msgElements, buffer + sizeof(MsgHeader) + sizeof(msgMesh), msgHeader.msgSize);	//copy msg
+
+		// setup stringstream
+		std::string msgString(msgElements, msgHeader.msgSize);
+		std::istringstream ss(msgString);
+
+		std::string materialName;
+		ss >> materialName;
+		std::cout << "mat name: " << materialName << std::endl;
+
+		Color newColor = { 0,0,0,255 };
+		std::string colorOrTexture;
+		ss >> colorOrTexture;
+
+		if (colorOrTexture == "color")
+		{
+			std::cout << "is color" << std::endl;
+			float color[4] = { 0, 0, 0, 255 };
+			ss >> color[0] >> color[1] >> color[2];
+			newColor.r = color[0] * 255;
+			newColor.g = color[1] * 255;
+			newColor.b = color[2] * 255;
+		};
+		
+
+		for (int i = 0; i < *nrObjs; i++)
+		{
+			std::cout << "objName: " << objNameArray[i].name << std::endl;
+			std::cout << "tempName: " << objectName << std::endl;
+			if (objNameArray[i].name == objectName)
+			{
+				int tempIndex = objNameArray[i].index;
+				Model tempModel = objNameArray[i].model;
+				int tempIndex2 = objNameArray[i].index;
+				std::string tempName2 = objNameArray[i].name;
+				Matrix newModelMatrix = objNameArray[i].modelMatrix;
+				Color tempColor = newColor;
+				std::string tempMaterialName = materialName;
+
+				std::cout << tempColor.r << ", " << tempColor.g << ", " << tempColor.b << std::endl;
+
+				objNameArray.erase(objNameArray.begin() + i);
+				objNameArray.insert(objNameArray.begin() + i, { tempModel, tempIndex2, tempName2, newModelMatrix, newColor, tempMaterialName });
+			}
+		}
+
+		delete[] msgElements;
+	}
 }
 
 void updateNodeName(std::vector<modelFromMaya>& objNameArray, char* buffer, int bufferSize, Shader shader, int* nrObjs, int* index, std::vector<lightFromMaya>& lightsFromMaya, std::vector<cameraFromMaya>& cameraFromMaya)
@@ -792,9 +926,11 @@ void updateNodeName(std::vector<modelFromMaya>& objNameArray, char* buffer, int 
 				int tempIndex = objNameArray[i].index;
 				Model tempModel = objNameArray[i].model;
 				Matrix tempMatrix = objNameArray[i].modelMatrix;
+				Color tempColor = objNameArray[i].color;
+				std::string tempMaterialName = objNameArray[i].materialName;
 
 				objNameArray.erase(objNameArray.begin() + i);
-				objNameArray.insert(objNameArray.begin() + i, { tempModel, tempIndex, newName, tempMatrix, {0,0,0,1} });
+				objNameArray.insert(objNameArray.begin() + i, { tempModel, tempIndex, newName, tempMatrix, tempColor, tempMaterialName });
 			}
 		}
 		delete[] msgElements;
