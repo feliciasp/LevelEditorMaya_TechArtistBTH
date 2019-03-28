@@ -198,22 +198,32 @@ void nodeTextureAttributeChanged(MNodeMessage::AttributeMessage msg, MPlug &plug
 		{
 			materialName = materialNamePlug.substr(0, materialNamePlug.find(splitElement));
 			MStreamUtils::stdOutStream() << "name mat 2: " << materialName << endl;
+
+			MFnDependencyNode textureNode(texObj);
+			MPlug fileTextureName = textureNode.findPlug("ftn");
+			MString fileName;
+			
+			fileTextureName.getValue(fileName);
+			MStreamUtils::stdOutStream() << fileName << endl;
+			
+			std::string fileNameString = fileName.asChar();
+
+			if (fileNameString.length() > 0)
+			{
+				MStreamUtils::stdOutStream() << fileName << endl;
+				MStreamUtils::stdOutStream() << fileName.asChar() << endl;
+				std::string materialString = "";
+				materialString.append(materialName + " ");
+				materialString.append("texture ");
+				materialString.append(fileNameString);
+
+
+				MStreamUtils::stdOutStream() << "final sting: " << materialString << endl;
+			}
 		}
 	}
 
-	MFnDependencyNode textureNode(texObj);
-	MPlug fileTextureName = textureNode.findPlug("ftn");
-	MString fileName;
-	if (plug.name() == fileTextureName.name())
-	{
-		fileTextureName.getValue(fileName);
-		MStreamUtils::stdOutStream() << fileName << endl;
-	}
-
-	std::string materialString = "";
-	materialString.append(materialName + " ");
-	materialString.append("texture ");
-	materialString.append(to_string(fileName));
+	
 
 }
 
@@ -763,46 +773,47 @@ void vtxPlugConnected(MPlug & srcPlug, MPlug & destPlug, bool made, void* client
 				// NORMALS //
 				/////////////
 
-				MIntArray normCount;
-				MIntArray triNormIndex;
-				mesh.getNormalIds(normCount, triNormIndex);
+				//MIntArray normCount;
+				//MIntArray triNormIndex;
+				//mesh.getNormalIds(normCount, triNormIndex);
 
-				MStreamUtils::stdOutStream() << "triNormIndex: " << triNormIndex << endl;
+				//MStreamUtils::stdOutStream() << "triNormIndex: " << triNormIndex << endl;
 
-				MFloatVectorArray normals;
-				mesh.getNormals(normals, MSpace::kWorld);
+				//MFloatVectorArray normals;
+				//mesh.getNormals(normals, MSpace::kWorld);
 
-				int nrOfNormals = normals.length();
+				//int nrOfNormals = normals.length();
 
-				MVectorArray normalsArray;
+				//MVectorArray normalsArray;
 
-				for (int i = 0; i < triNormIndex.length(); i++)
-				{
-					normalsArray.append(normals[triNormIndex[i]]);
-				}
+				//for (int i = 0; i < triNormIndex.length(); i++)
+				//{
+				//	normalsArray.append(normals[triNormIndex[i]]);
+				//	MStreamUtils::stdOutStream() << "triNormIndex: " << triNormIndex[i] << endl;
+				//}
 
-				int nrNormals = triNormIndex.length();
+				//int nrNormals = triNormIndex.length();
 
-				//MVector to string
-				std::string NormArrayString;
-				NormArrayString.append(to_string(nrNormals) + " ");
-				size_t normArrElements = 0;
+				////MVector to string
+				//std::string NormArrayString;
+				//NormArrayString.append(to_string(nrNormals) + " ");
+				//size_t normArrElements = 0;
 
-				for (int u = 0; u < normalsArray.length(); u++)
-				{
-					for (int v = 0; v < 3; v++)
-					{
-						NormArrayString.append(to_string(normalsArray[u][v]) + " ");
-						normArrElements++;
-					}
-				}
+				//for (int u = 0; u < normalsArray.length(); u++)
+				//{
+				//	for (int v = 0; v < 3; v++)
+				//	{
+				//		NormArrayString.append(to_string(normalsArray[u][v]) + " ");
+				//		normArrElements++;
+				//	}
+				//}
 
-				//MStreamUtils::stdOutStream() << "NormArrayString: " << NormArrayString << "_" << endl;
+				////MStreamUtils::stdOutStream() << "NormArrayString: " << NormArrayString << "_" << endl;
 
 
 				std::string masterTransformString;
 				masterTransformString.append(vtxArrayString + " ");
-				masterTransformString.append(NormArrayString);
+				//masterTransformString.append(NormArrayString);
 
 				//pass to send
 				bool msgToSend = false;
