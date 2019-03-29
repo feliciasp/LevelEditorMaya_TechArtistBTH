@@ -739,21 +739,22 @@ void vtxPlugConnected(MPlug & srcPlug, MPlug & destPlug, bool made, void* client
 			std::string name = plugArray[0].name().asChar();
 
 
-
+			MStatus result = MS::kFailure;
 			bool triangulated = false;
 			if (name.find(testString) == std::string::npos)
 			{
-				MGlobal::executeCommand("polyTriangulate " + mesh.name(), true, true);
+				result = MGlobal::executeCommand("polyTriangulate " + mesh.name(), true, true);
 				MStreamUtils::stdOutStream() << "TRANGULATING" << endl;
 				triangulated = true;
 			}
 			else{
 				triangulated = true;
+				result = MS::kSuccess;
 			}
 			
 			MStreamUtils::stdOutStream() << "_________________________" << endl;
 
-			if (triangulated)
+			if (result == MS::kSuccess)
 			{
 
 
@@ -839,38 +840,38 @@ void vtxPlugConnected(MPlug & srcPlug, MPlug & destPlug, bool made, void* client
 					MStreamUtils::stdOutStream() << "triNormCount: " << triNormIndex.length() << endl;
 				}
 
-				////MFloatVectorArray normals;
-				////mesh.getNormals(normals, MSpace::kWorld);
+				MFloatVectorArray normals;
+				mesh.getNormals(normals, MSpace::kWorld);
 
-				////int nrOfNormals = normals.length();
+				int nrOfNormals = normals.length();
 
-				////MVectorArray normalsArray;
+				MVectorArray normalsArray;
 
-				////for (int i = 0; i < triNormIndex.length(); i++)
-				////{
-				////	normalsArray.append(normals[triNormIndex[i]]);
-				////	MStreamUtils::stdOutStream() << "triNormIndex: " << triNormIndex[i] << endl;
-				////}
+				for (int i = 0; i < triNormIndex.length(); i++)
+				{
+					normalsArray.append(normals[0]);
+					MStreamUtils::stdOutStream() << "triNormIndex: " << triNormIndex[i] << endl;
+				}
 
-				////int nrNormals = triNormIndex.length();
+				int nrNormals = triNormIndex.length();
 
-				//////MVector to string
-				////std::string NormArrayString;
-				////NormArrayString.append(to_string(nrNormals) + " ");
-				////size_t normArrElements = 0;
+				//MVector to string
+				std::string NormArrayString;
+				NormArrayString.append(to_string(nrNormals) + " ");
+				size_t normArrElements = 0;
 
-				////for (int u = 0; u < normalsArray.length(); u++)
-				////{
-				////	for (int v = 0; v < 3; v++)
-				////	{
-				////		NormArrayString.append(to_string(normalsArray[u][v]) + " ");
-				////		normArrElements++;
-				////	}
-				////}
+				for (int u = 0; u < normalsArray.length(); u++)
+				{
+					for (int v = 0; v < 3; v++)
+					{
+						NormArrayString.append(to_string(normalsArray[u][v]) + " ");
+						normArrElements++;
+					}
+				}
 
-				//////MStreamUtils::stdOutStream() << "NormArrayString: " << NormArrayString << "_" << endl;
+				//MStreamUtils::stdOutStream() << "NormArrayString: " << NormArrayString << "_" << endl;
 
-				std:string NormArrayString = "";
+				/*std:string NormArrayString = "";
 				for (int i = 0; i < 36; i++)
 				{
 					NormArrayString.append(to_string(0));
@@ -879,11 +880,13 @@ void vtxPlugConnected(MPlug & srcPlug, MPlug & destPlug, bool made, void* client
 					NormArrayString.append(" ");
 					NormArrayString.append(to_string(1));
 					NormArrayString.append(" ");
-				}
+				}*/
 
 				std::string masterTransformString;
 				masterTransformString.append(vtxArrayString + " ");
 				masterTransformString.append(NormArrayString);
+
+				MStreamUtils::stdOutStream() << "masterTransformString: " << masterTransformString << "_" << endl;
 
 				//pass to send
 				bool msgToSend = false;
